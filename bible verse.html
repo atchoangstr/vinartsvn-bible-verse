@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VINARTSVN — Bible Verse App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Lato:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky1: #F5FBFF;
+    --sky2: #EAF6FF;
+    --sky3: #DDF0FF;
+    --sky4: #CFE8FF;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-border: rgba(255,255,255,0.75);
+    --text-deep: #1a3a5c;
+    --text-mid: #2e5f8a;
+    --text-soft: #4a7ea8;
+    --accent: #4a90c4;
+    --gold: #c9a84c;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: linear-gradient(175deg, #F5FBFF 0%, #DDF0FF 40%, #CFE8FF 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+    animation: fadeIn 1.2s ease forwards;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Sun rays */
+  .rays {
+    position: fixed; top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 900px; height: 600px;
+    pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .ray {
+    position: absolute; top: 60px; left: 50%;
+    width: 3px; height: 500px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.55), transparent);
+    transform-origin: top center; border-radius: 2px;
+    animation: rayPulse 6s ease-in-out infinite;
+  }
+  .ray:nth-child(1)  { transform: rotate(-65deg); animation-delay: 0s;   opacity: 0.7; }
+  .ray:nth-child(2)  { transform: rotate(-50deg); animation-delay: 0.3s; opacity: 0.6; width: 5px; }
+  .ray:nth-child(3)  { transform: rotate(-35deg); animation-delay: 0.6s; opacity: 0.75; }
+  .ray:nth-child(4)  { transform: rotate(-20deg); animation-delay: 0.9s; opacity: 0.5; width: 6px; }
+  .ray:nth-child(5)  { transform: rotate(-8deg);  animation-delay: 0.4s; opacity: 0.65; }
+  .ray:nth-child(6)  { transform: rotate(0deg);   animation-delay: 0s;   opacity: 0.8; width: 7px; }
+  .ray:nth-child(7)  { transform: rotate(8deg);   animation-delay: 0.4s; opacity: 0.65; }
+  .ray:nth-child(8)  { transform: rotate(20deg);  animation-delay: 0.9s; opacity: 0.5; width: 6px; }
+  .ray:nth-child(9)  { transform: rotate(35deg);  animation-delay: 0.6s; opacity: 0.75; }
+  .ray:nth-child(10) { transform: rotate(50deg);  animation-delay: 0.3s; opacity: 0.6; width: 5px; }
+  .ray:nth-child(11) { transform: rotate(65deg);  animation-delay: 0s;   opacity: 0.7; }
+
+  @keyframes rayPulse {
+    0%, 100% { opacity: var(--base-op, 0.6); }
+    50%       { opacity: 0.2; }
+  }
+
+  /* Cross watermark */
+  .cross-watermark {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px; height: 300px;
+    pointer-events: none; z-index: 0; opacity: 0.045;
+  }
+  .cross-v {
+    position: absolute; left: 50%; top: 10%;
+    width: 30px; height: 80%;
+    background: #2a6faa; transform: translateX(-50%); border-radius: 4px;
+  }
+  .cross-h {
+    position: absolute; top: 28%; left: 10%;
+    width: 80%; height: 30px;
+    background: #2a6faa; border-radius: 4px;
+  }
+
+  /* Bokeh */
+  .bokeh { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .particle {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(180,220,255,0.3) 60%, transparent 100%);
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) scale(1);   opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-110vh) scale(0.8); opacity: 0; }
+  }
+
+  /* App container */
+  .app {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 420px; min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 20px;
+  }
+
+  /* Header */
+  .brand { text-align: center; margin-bottom: 10px; }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 600;
+    letter-spacing: 6px; color: var(--text-deep); text-transform: uppercase;
+  }
+  .brand-name span { color: var(--gold); }
+  .brand-tagline {
+    font-size: 11px; font-weight: 300; color: var(--text-soft);
+    letter-spacing: 1.5px; margin-top: 6px; text-transform: uppercase;
+  }
+
+  /* Divider */
+  .divider {
+    width: 60px; height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    margin: 16px auto 24px; opacity: 0.7;
+  }
+
+  /* Verse card */
+  .card {
+    width: 100%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px; padding: 40px 32px 36px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+      0 4px 32px rgba(120,180,240,0.18),
+      0 1px 8px rgba(255,255,255,0.6) inset,
+      0 0 0 0.5px rgba(255,255,255,0.5) inset;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, transparent, rgba(201,168,76,0.5), transparent);
+    border-radius: 24px 24px 0 0;
+  }
+
+  .quote-icon { display: block; margin: 0 auto 20px; width: 40px; height: 40px; opacity: 0.75; }
+
+  .verse-wrap {
+    min-height: 180px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .verse-wrap.fade-out { opacity: 0; transform: translateY(8px); }
+  .verse-wrap.fade-in  { opacity: 1; transform: translateY(0); }
+
+  .verse-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px; font-weight: 400; line-height: 1.75;
+    color: var(--text-deep); text-align: center; font-style: italic; margin-bottom: 24px;
+  }
+  .verse-ref {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    letter-spacing: 1.5px; text-transform: uppercase; text-align: center;
+    padding: 6px 20px; border: 1px solid rgba(74,144,196,0.3);
+    border-radius: 30px; background: rgba(74,144,196,0.07);
+  }
+
+  .progress {
+    margin-top: 20px; text-align: center;
+    font-size: 11px; color: var(--text-soft);
+    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 400;
+  }
+  .progress-bar-wrap {
+    width: 100%; height: 2px; background: rgba(74,144,196,0.15);
+    border-radius: 2px; margin-top: 14px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--gold), var(--accent));
+    border-radius: 2px; transition: width 0.5s ease;
+  }
+
+  /* Nav */
+  .nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; margin-top: 28px;
+  }
+  .nav-btn {
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-deep);
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 12px rgba(120,180,240,0.15);
+    -webkit-tap-highlight-color: transparent; outline: none;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.8); transform: scale(1.08); box-shadow: 0 4px 20px rgba(120,180,240,0.25); }
+  .nav-btn:active { transform: scale(0.95); }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  .play-btn {
+    width: 62px; height: 62px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(220,240,255,0.85));
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 4px 20px rgba(74,144,196,0.2);
+  }
+  .play-btn svg { width: 22px; height: 22px; }
+
+  /* Dots */
+  .dots { display: flex; gap: 7px; justify-content: center; margin-top: 24px; }
+  .dot {
+    width: 6px; height: 6px; border-radius: 3px;
+    background: rgba(74,144,196,0.25);
+    transition: background 0.3s ease, width 0.3s ease;
+    cursor: pointer;
+  }
+  .dot.active { background: var(--accent); width: 18px; }
+
+  /* Auto ring */
+  .auto-ring {
+    position: absolute; top: 0; left: 0;
+    width: 62px; height: 62px; border-radius: 50%; pointer-events: none;
+  }
+  .auto-ring circle {
+    fill: none; stroke: var(--gold); stroke-width: 2;
+    stroke-dasharray: 175; stroke-dashoffset: 175;
+    transform: rotate(-90deg); transform-origin: 31px 31px;
+    transition: stroke-dashoffset 0.3s linear;
+  }
+  .play-wrap { position: relative; width: 62px; height: 62px; }
+
+  .category-tag {
+    margin-top: 22px; font-size: 10px;
+    color: rgba(74,144,196,0.6); letter-spacing: 2px;
+    text-transform: uppercase; text-align: center;
+  }
+
+  /* ── Music: Tap to Enable button ── */
+  #musicPrompt {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    z-index: 200;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(255,255,255,0.88);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-radius: 40px;
+    padding: 11px 22px;
+    font-family: 'Lato', sans-serif;
+    font-size: 13px; font-weight: 400;
+    color: var(--text-deep);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(120,180,240,0.22), 0 1px 6px rgba(255,255,255,0.5) inset;
+    display: flex; align-items: center; gap: 8px;
+    animation: promptFloat 3s ease-in-out infinite;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    white-space: nowrap;
+    border: none;
+    outline: none;
+  }
+  #musicPrompt.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(10px); }
+  @keyframes promptFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%       { transform: translateX(-50%) translateY(-5px); }
+  }
+  #musicPrompt.hidden { animation: none; }
+
+  /* ── Music Controller ── */
+  #musicCtrl {
+    position: fixed; bottom: 28px; right: 20px; z-index: 200;
+    background: rgba(255,255,255,0.62);
+    border: 1px solid rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 24px rgba(120,180,240,0.2), 0 1px 6px rgba(255,255,255,0.55) inset;
+    display: flex; flex-direction: column; gap: 10px;
+    min-width: 148px;
+    transition: opacity 0.4s ease;
+  }
+  .mc-label {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-soft); text-align: center; font-family: 'Lato', sans-serif;
+    opacity: 0.7; margin-bottom: 1px;
+  }
+  .mc-row { display: flex; align-items: center; gap: 9px; }
+  .mc-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.5);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-deep);
+    transition: transform 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color: transparent; outline: none;
+    flex-shrink: 0;
+  }
+  .mc-btn:hover { background: rgba(255,255,255,0.85); transform: scale(1.08); }
+  .mc-btn:active { transform: scale(0.93); }
+  .mc-btn svg { width: 15px; height: 15px; }
+
+  /* Volume slider */
+  .mc-vol-wrap { flex: 1; display: flex; align-items: center; }
+  input[type=range].mc-vol {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 3px;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) 20%, rgba(74,144,196,0.2) 20%);
+    border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range].mc-vol::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: white;
+    border: 2px solid var(--accent);
+    box-shadow: 0 1px 6px rgba(74,144,196,0.3);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  input[type=range].mc-vol::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  input[type=range].mc-vol::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: white; border: 2px solid var(--accent);
+    cursor: pointer;
+  }
+
+  /* music note icon pulse */
+  .mc-note {
+    font-size: 10px; color: var(--gold); opacity: 0.8;
+    animation: notePulse 2s ease-in-out infinite;
+  }
+  @keyframes notePulse { 0%,100%{opacity:0.8;transform:scale(1);} 50%{opacity:1;transform:scale(1.12);} }
+
+  @media (max-height: 700px) {
+    .card { padding: 28px 24px 24px; }
+    .verse-text { font-size: 17px; }
+    .brand-name { font-size: 22px; }
+    .divider { margin: 12px auto 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sun rays -->
+<div class="rays" aria-hidden="true">
+  <div class="ray"></div><div class="ray"></div><div class="ray"></div>
+  <div class="ray"></div><div class="ray"></div><div class="ray"></div>
+  <div class="ray"></div><div class="ray"></div><div class="ray"></div>
+  <div class="ray"></div><div class="ray"></div>
+</div>
+
+<!-- Cross watermark -->
+<div class="cross-watermark" aria-hidden="true">
+  <div class="cross-v"></div>
+  <div class="cross-h"></div>
+</div>
+
+<!-- Bokeh -->
+<div class="bokeh" id="bokeh" aria-hidden="true"></div>
+
+<!-- Background audio (graceful fallback if file missing) -->
+<audio id="bgAudio" loop preload="auto" aria-hidden="true">
+  <source src="background.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Tap to Enable Music prompt -->
+<button id="musicPrompt" aria-label="Tap to enable background music">
+  🔊 Tap to Enable Music
+</button>
+
+<!-- Music Controller -->
+<div id="musicCtrl" role="region" aria-label="Music controls">
+  <div class="mc-label">♪ Music</div>
+  <div class="mc-row">
+    <button class="mc-btn" id="mcPlay" aria-label="Play or pause music">
+      <svg id="mcPlayIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+    <div class="mc-vol-wrap">
+      <input type="range" class="mc-vol" id="mcVol" min="0" max="100" value="20" aria-label="Volume">
+    </div>
+    <button class="mc-btn" id="mcMute" aria-label="Mute or unmute music">
+      <svg id="mcMuteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" stroke="none"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" role="main">
+  <header class="brand">
+    <div class="brand-name">VIN<span>ARTS</span>VN</div>
+    <div class="brand-tagline">Discover God's Word, One Verse at a Time</div>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="card" role="region" aria-label="Bible verse">
+    <svg class="quote-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M8 26c0-5.523 3.477-10 9-12l1.5 2.5C15.5 17.5 13 19.5 13 22h5v8H8v-4zm16 0c0-5.523 3.477-10 9-12l1.5 2.5c-3 1-5.5 3-5.5 5.5h5v8H24v-4z" fill="#4a90c4" opacity="0.5"/>
+    </svg>
+
+    <div class="verse-wrap fade-in" id="verseWrap">
+      <p class="verse-text" id="verseText"></p>
+      <span class="verse-ref" id="verseRef"></span>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill" style="width:10%"></div>
+    </div>
+    <div class="progress" id="progressLabel">Verse 1 of 10</div>
+  </div>
+
+  <nav class="nav" aria-label="Verse navigation">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous verse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <div class="play-wrap">
+      <button class="nav-btn play-btn" id="playBtn" aria-label="Auto-play verses">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="none">
+          <polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <svg class="auto-ring" id="autoRing" viewBox="0 0 62 62">
+        <circle cx="31" cy="31" r="28" id="ringCircle"/>
+      </svg>
+    </div>
+
+    <button class="nav-btn" id="nextBtn" aria-label="Next verse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  </nav>
+
+  <div class="dots" id="dots" role="tablist" aria-label="Verse indicator"></div>
+  <div class="category-tag" id="categoryTag">Faith &amp; Hope</div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   VERSES
+════════════════════════════════════════ */
+const verses = [
+  { text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.", ref: "John 3:16", category: "God's Love" },
+  { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13", category: "Strength & Courage" },
+  { text: "The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.", ref: "Psalm 23:1–3", category: "Peace & Rest" },
+  { text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.", ref: "Proverbs 3:5–6", category: "Trust & Faith" },
+  { text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.", ref: "Romans 8:28", category: "Hope & Purpose" },
+  { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.", ref: "Joshua 1:9", category: "Courage & Strength" },
+  { text: "The Lord bless you and keep you; the Lord make his face shine on you and be gracious to you; the Lord turn his face toward you and give you peace.", ref: "Numbers 6:24–26", category: "Blessing & Grace" },
+  { text: "Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me, for I am gentle and humble in heart.", ref: "Matthew 11:28–29", category: "Rest & Comfort" },
+  { text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.", ref: "Isaiah 40:31", category: "Renewal & Hope" },
+  { text: "The Lord himself goes before you and will be with you; he will never leave you nor forsake you. Do not be afraid; do not be discouraged.", ref: "Deuteronomy 31:8", category: "God's Presence" }
+];
+
+/* ════════════════════════════════════════
+   VERSE SLIDESHOW STATE
+════════════════════════════════════════ */
+// Random starting verse on every visit
+let current = Math.floor(Math.random() * verses.length);
+let isPlaying = false;
+let autoTimer = null;
+const INTERVAL = 8000;
+
+const verseText    = document.getElementById('verseText');
+const verseRef     = document.getElementById('verseRef');
+const verseWrap    = document.getElementById('verseWrap');
+const progressFill = document.getElementById('progressFill');
+const progressLabel= document.getElementById('progressLabel');
+const categoryTag  = document.getElementById('categoryTag');
+const dotsEl       = document.getElementById('dots');
+const prevBtn      = document.getElementById('prevBtn');
+const nextBtn      = document.getElementById('nextBtn');
+const playBtn      = document.getElementById('playBtn');
+const playIcon     = document.getElementById('playIcon');
+const ringCircle   = document.getElementById('ringCircle');
+
+// Build dots
+verses.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === current ? ' active' : '');
+  d.setAttribute('role', 'tab');
+  d.setAttribute('aria-label', 'Verse ' + (i + 1));
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+});
+
+function render(idx) {
+  const v = verses[idx];
+  verseWrap.classList.remove('fade-in');
+  verseWrap.classList.add('fade-out');
+  setTimeout(() => {
+    verseText.textContent = v.text;
+    verseRef.textContent  = v.ref;
+    categoryTag.textContent = v.category;
+    progressLabel.textContent = 'Verse ' + (idx + 1) + ' of ' + verses.length;
+    progressFill.style.width = (((idx + 1) / verses.length) * 100) + '%';
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    verseWrap.classList.remove('fade-out');
+    verseWrap.classList.add('fade-in');
+  }, 260);
+}
+
+function goTo(idx) {
+  current = (idx + verses.length) % verses.length;
+  render(current);
+  if (isPlaying) resetRing();
+}
+
+prevBtn.addEventListener('click', () => goTo(current - 1));
+nextBtn.addEventListener('click', () => goTo(current + 1));
+
+function resetRing() {
+  clearTimeout(autoTimer);
+  ringCircle.style.transition = 'none';
+  ringCircle.style.strokeDashoffset = '175.9';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ringCircle.style.transition = 'stroke-dashoffset ' + INTERVAL + 'ms linear';
+    ringCircle.style.strokeDashoffset = '0';
+  }));
+  autoTimer = setTimeout(() => {
+    goTo(current + 1);
+    if (isPlaying) resetRing();
+  }, INTERVAL);
+}
+
+function setPlayIcon(playing) {
+  if (playing) {
+    playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>';
+  } else {
+    playIcon.innerHTML = '<polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/>';
+  }
+}
+
+playBtn.addEventListener('click', () => {
+  isPlaying = !isPlaying;
+  setPlayIcon(isPlaying);
+  if (isPlaying) {
+    resetRing();
+  } else {
+    clearTimeout(autoTimer);
+    ringCircle.style.transition = 'none';
+    ringCircle.style.strokeDashoffset = '175.9';
+  }
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  goTo(current - 1);
+  if (e.key === 'ArrowRight') goTo(current + 1);
+  if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+});
+
+// Touch swipe
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) { dx < 0 ? goTo(current + 1) : goTo(current - 1); }
+}, { passive: true });
+
+/* ════════════════════════════════════════
+   BOKEH
+════════════════════════════════════════ */
+const bokeh = document.getElementById('bokeh');
+function spawnParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 14 + 4;
+  const dur  = Math.random() * 12 + 10;
+  const delay = Math.random() * 6;
+  p.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + (Math.random()*100) + 'vw;bottom:-30px;animation-duration:' + dur + 's;animation-delay:' + delay + 's;opacity:0;';
+  bokeh.appendChild(p);
+  setTimeout(() => p.remove(), (dur + delay) * 1000 + 500);
+}
+for (let i = 0; i < 22; i++) spawnParticle();
+setInterval(spawnParticle, 1200);
+
+/* ════════════════════════════════════════
+   MUSIC
+════════════════════════════════════════ */
+const audio       = document.getElementById('bgAudio');
+const musicPrompt = document.getElementById('musicPrompt');
+const mcPlay      = document.getElementById('mcPlay');
+const mcPlayIcon  = document.getElementById('mcPlayIcon');
+const mcMute      = document.getElementById('mcMute');
+const mcMuteIcon  = document.getElementById('mcMuteIcon');
+const mcVol       = document.getElementById('mcVol');
+
+let musicReady = false;   // true once user gesture has unlocked audio
+let musicPaused = false;  // tracks user-paused state
+let prevVolume = 0.2;
+
+// Set initial volume
+audio.volume = 0.2;
+
+function updateVolSliderTrack(val) {
+  mcVol.style.background = 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + val + '%, rgba(74,144,196,0.2) ' + val + '%)';
+}
+updateVolSliderTrack(20);
+
+function setMcPlayIcon(playing) {
+  if (playing) {
+    mcPlayIcon.innerHTML = '<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/>';
+  } else {
+    mcPlayIcon.innerHTML = '<polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/>';
+  }
+}
+
+function setMuteIcon(muted) {
+  if (muted) {
+    mcMuteIcon.innerHTML = '<polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" stroke="none"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  } else {
+    mcMuteIcon.innerHTML = '<polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor" stroke="none"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+  }
+}
+
+function startMusic() {
+  if (!musicReady) {
+    musicReady = true;
+    musicPrompt.classList.add('hidden');
+  }
+  // Attempt play — gracefully handle missing file or policy errors
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(() => {}); // file missing or blocked — do nothing
+  }
+  setMcPlayIcon(true);
+  musicPaused = false;
+}
+
+function enableMusicOnGesture() {
+  if (musicReady) return;
+  startMusic();
+  document.removeEventListener('click', enableMusicOnGesture);
+  document.removeEventListener('touchend', enableMusicOnGesture);
+  document.removeEventListener('keydown', enableMusicOnGesture);
+}
+
+// Try autoplay immediately
+(function tryAutoplay() {
+  const p = audio.play();
+  if (p && typeof p.then === 'function') {
+    p.then(() => {
+      // Autoplay succeeded
+      musicReady = true;
+      musicPrompt.classList.add('hidden');
+      setMcPlayIcon(true);
+    }).catch(() => {
+      // Autoplay blocked — show prompt and wait for gesture
+      document.addEventListener('click', enableMusicOnGesture);
+      document.addEventListener('touchend', enableMusicOnGesture, { passive: true });
+      document.addEventListener('keydown', enableMusicOnGesture);
+    });
+  } else {
+    // Older browsers — assume it played or couldn't
+    musicReady = true;
+    musicPrompt.classList.add('hidden');
+  }
+})();
+
+// Prompt button explicit click
+musicPrompt.addEventListener('click', e => {
+  e.stopPropagation();
+  startMusic();
+  document.removeEventListener('click', enableMusicOnGesture);
+  document.removeEventListener('touchend', enableMusicOnGesture);
+  document.removeEventListener('keydown', enableMusicOnGesture);
+});
+
+// Music controller: play/pause
+mcPlay.addEventListener('click', e => {
+  e.stopPropagation();
+  if (!musicReady) { startMusic(); return; }
+  if (audio.paused) {
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+    setMcPlayIcon(true);
+    musicPaused = false;
+  } else {
+    audio.pause();
+    setMcPlayIcon(false);
+    musicPaused = true;
+  }
+});
+
+// Music controller: mute/unmute
+mcMute.addEventListener('click', e => {
+  e.stopPropagation();
+  if (audio.muted) {
+    audio.muted = false;
+    setMuteIcon(false);
+    mcVol.value = Math.round(prevVolume * 100);
+    updateVolSliderTrack(mcVol.value);
+  } else {
+    prevVolume = audio.volume;
+    audio.muted = true;
+    setMuteIcon(true);
+  }
+});
+
+// Volume slider
+mcVol.addEventListener('input', e => {
+  e.stopPropagation();
+  const val = parseInt(mcVol.value, 10);
+  audio.volume = val / 100;
+  audio.muted = false;
+  setMuteIcon(false);
+  updateVolSliderTrack(val);
+  if (!musicReady) startMusic();
+});
+
+// Keep play icon in sync if audio ends unexpectedly (shouldn't with loop, but safety net)
+audio.addEventListener('pause', () => { if (!musicPaused) setMcPlayIcon(false); });
+audio.addEventListener('play',  () => { setMcPlayIcon(true); });
+
+/* ════════════════════════════════════════
+   INIT
+════════════════════════════════════════ */
+render(current);
+</script>
+</body>
+</html>
