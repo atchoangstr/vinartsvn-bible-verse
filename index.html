@@ -44,6 +44,9 @@
     overflow: hidden;
     font-family: var(--font-ui);
     background: url('bible-verse-background 5.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -52,6 +55,16 @@
     animation: pageIn 1s var(--ease-out) forwards;
   }
   button { font: inherit; color: inherit; background: none; border: none; }
+
+  /* Mobile */
+@media (max-width: 768px) {
+    body {
+        background: url("bible-background mobile.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+}
 
   /* ════════════════════════════════════════
      3. TYPOGRAPHY
